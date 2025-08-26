@@ -1,4 +1,4 @@
-name: Java CI/CD Pipeline
+name: Simple CI/CD Pipeline
 
 on:
   push:
@@ -35,21 +35,42 @@ jobs:
       run: mvn clean test
       
     - name: Generate test report
-      uses: dorny/test-reporter@v1
-      if: success() || failure()
+      run: mvn surefire-report:report-only
+      if: always()
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
       with:
-        name: Maven Tests
-        path: target/surefire-reports/*.xml
-        reporter: java-junit
-        fail-on-error: true
+        name: test-results-${{ github.run_number }}
+        path: |
+          target/surefire-reports/*.xml
+          target/surefire-reports/*.txt
+          target/site/surefire-report.html
+        retention-days: 30
+        
+    - name: Upload test coverage
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-coverage-${{ github.run_number }}
+        path: |
+          target/site/jacoco/
+          target/jacoco.exec
+        retention-days: 30
+        
+    - name: Comment Test Results on PR
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: github.event_name == 'pull_request' && always()
+      with:
+        files: target/surefire-reports/*.xml
+        check_name: "Test Results"
+        comment_title: "Unit Test Results"
 
   build:
     needs: test
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -67,9 +88,9 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
         
-    - name: Build with Maven
+    - name: Build application
       run: mvn clean package -DskipTests
-      
+        
     - name: Upload JAR artifact
       uses: actions/upload-artifact@v3
       with:
@@ -79,6 +100,7 @@ jobs:
   docker:
     needs: build
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     permissions:
       contents: read
       packages: write
@@ -86,7 +108,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       
@@ -109,7 +131,6 @@ jobs:
           type=raw,value=latest,enable={{is_default_branch}}
           
     - name: Build and push Docker image
-      id: build
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -119,10 +140,3 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        
-    - name: Generate artifact attestation
-      uses: actions/attest-build-provenance@v1
-      with:
-        subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
-        subject-digest: ${{ steps.build.outputs.digest }}
-        push-to-registry: true
