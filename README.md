@@ -194,7 +194,7 @@ The application initializes with 5 sample books:
 
 This project includes a GitHub Actions workflow for continuous integration and deployment:
 
-### CI/CD Pipeline (`.github/workflows/simple-ci-cd.yml`)
+### CI/CD Pipeline (`.github/workflows/ci-cd.yml`)
 
 **Triggers:**
 - Push to `main` or `develop` branches
