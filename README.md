@@ -192,48 +192,39 @@ The application initializes with 5 sample books:
 
 ## CI/CD Pipeline
 
-This project includes GitHub Actions workflows for continuous integration and deployment:
+This project includes a GitHub Actions workflow for continuous integration and deployment:
 
-### Main CI/CD Pipeline (`.github/workflows/ci-cd.yml`)
+### CI/CD Pipeline (`.github/workflows/simple-ci-cd.yml`)
 
 **Triggers:**
 - Push to `main` or `develop` branches
 - Pull requests to `main` branch
 
 **Jobs:**
-1. **Test**: Runs unit tests with Maven
+1. **Test**: Runs unit tests with comprehensive reporting and artifacts
 2. **Build**: Compiles the application and uploads JAR artifact
 3. **Docker**: Builds and pushes Docker image to GitHub Container Registry
 
 **Features:**
-- Automated testing with test reports
-- Maven dependency caching
+- Automated testing with detailed test reports and coverage
+- Test result artifacts for download and analysis
+- Maven dependency caching for faster builds
 - Multi-platform Docker builds (amd64, arm64)
-- Image pushed to `ghcr.io`
-- Build provenance attestation
+- Images pushed to GitHub Container Registry (`ghcr.io`)
+- Test results commented on pull requests
 
-### Docker Hub Pipeline (`.github/workflows/docker-hub.yml`)
+### Test Artifacts
 
-**Alternative pipeline for Docker Hub:**
-- Pushes to Docker Hub instead of GitHub Container Registry
-- Requires `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets
+Each workflow run generates downloadable artifacts:
+- **Test Results**: JUnit XML, text summaries, and HTML reports
+- **Code Coverage**: JaCoCo coverage reports with detailed metrics
+- **JAR Artifact**: Compiled application ready for deployment
 
-### Required Secrets (for Docker Hub workflow)
+### Container Registry
 
-Add these secrets in your GitHub repository settings:
-- `DOCKERHUB_USERNAME`: Your Docker Hub username
-- `DOCKERHUB_TOKEN`: Your Docker Hub access token
-
-### Container Registry Options
-
-**GitHub Container Registry (Default):**
+**GitHub Container Registry:**
 ```bash
 docker pull ghcr.io/akilans/java-web-app:latest
-```
-
-**Docker Hub (if configured):**
-```bash
-docker pull yourusername/book-api:latest
 ```
 
 ## Docker Deployment
